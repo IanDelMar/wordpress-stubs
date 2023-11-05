@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PSR12NeutronRuleset.Strings.ConcatenationUsage.NotAllowed
+
 namespace PhpStubs\WordPress\Core\Tests;
 
 class TypeInferenceTest extends \PHPStan\Testing\TypeInferenceTestCase
@@ -29,8 +31,8 @@ class TypeInferenceTest extends \PHPStan\Testing\TypeInferenceTestCase
         yield from self::gatherAssertTypes(__DIR__ . '/data/has_filter.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/is_wp_error.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/mysql2date.php');
+        yield from self::gatherAssertTypes(__DIR__ . '/data/tag_exists.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/term_exists.php');
-        yield from self::gatherAssertTypes(__DIR__ . '/data/wp_clear_scheduled_hook.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/wp_error_parameter.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/wp_theme.php');
         yield from self::gatherAssertTypes(__DIR__ . '/data/wpdb.php');
