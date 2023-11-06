@@ -27,6 +27,7 @@ class FunctionMap
     /**
      * @phpstan-assert array<string, array<0|string, ?string>> $this->map
      */
+    // phpcs:ignore NeutronStandard.Functions.LongFunction.LongFunction
     private function initializeMap(): void
     {
         $this->map = [
@@ -57,7 +58,7 @@ class FunctionMap
             'have_posts' => [null, '@phpstan-impure' => ''],
             'is_term' => ["(\$term is 0 ? 0 : (\$term is '' ? null : (\$taxonomy is '' ? string|null : array{term_id: string, term_taxonomy_id: string}|null)))"],
             'is_wp_error' => ['($thing is \WP_Error ? true : false)', '@phpstan-assert-if-true' => '\WP_Error $thing'],
-            'mysql2date' => ["(\$format is 'G'|'U' ? int|false : string|false)"],
+            'mysql2date' => ["(false|(\$format is 'G'|'U' ? int : string))"],
             'next_posts' => ['($display is true ? void : string)'],
             'post_type_archive_title' => ['($display is true ? void : string|void)'],
             'previous_posts' => ['($display is true ? void : string)'],
@@ -95,10 +96,10 @@ class FunctionMap
             'WP_Http::head' => [$this->getHttpReturnType()],
             'WP_Http::post' => [$this->getHttpReturnType()],
             'WP_Http::request' => [$this->getHttpReturnType()],
-            'wp_insert_attachment' => ['($wp_error is false ? 0|positive-int : positive-int|\WP_Error)'],
-            'wp_insert_category' => ['($wp_error is false ? 0|positive-int : positive-int|\WP_Error)'],
-            'wp_insert_link' => ['($wp_error is false ? 0|positive-int : positive-int|\WP_Error)'],
-            'wp_insert_post' => ['($wp_error is false ? 0|positive-int : positive-int|\WP_Error)'],
+            'wp_insert_attachment' => ['(positive-int|($wp_error is false ? 0 : \WP_Error))'],
+            'wp_insert_category' => ['(positive-int|($wp_error is false ? 0 : \WP_Error))'],
+            'wp_insert_link' => ['(positive-int|($wp_error is false ? 0 : \WP_Error))'],
+            'wp_insert_post' => ['(positive-int|($wp_error is false ? 0 : \WP_Error))'],
             'WP_List_Table::display_tablenav' => ['void', 'which' => '"top"|"bottom"'],
             'WP_List_Table::pagination' => ['void', 'which' => '"top"|"bottom"'],
             'WP_List_Table::set_pagination_args' => ['void', 'args' => 'array{total_items?: int, total_pages?: int, per_page?: int}'],
@@ -130,10 +131,10 @@ class FunctionMap
             'WP_Theme::offsetGet' => ['($offset is ThemeKey ? mixed : null)'],
             'wp_title' => ['($display is true ? void : string)'],
             'wp_unschedule_event' => ['($wp_error is false ? bool : true|\WP_Error)', 'args' => self::getCronArgsType()],
-            'wp_unschedule_hook' => ['($wp_error is false ? 0|positive-int|false : 0|positive-int|\WP_Error)'],
+            'wp_unschedule_hook' => ['(0|positive-int|($wp_error is false ? false : \WP_Error))'],
             'wp_unslash' => ['T', '@phpstan-template' => 'T', 'value' => 'T'],
-            'wp_update_comment' => ['($wp_error is false ? 0|1|false : 0|1|\WP_Error)'],
-            'wp_update_post' => ['($wp_error is false ? 0|positive-int : positive-int|\WP_Error)'],
+            'wp_update_comment' => ['(0|1|($wp_error is false ? false : \WP_Error))'],
+            'wp_update_post' => ['(positive-int|($wp_error is false ? 0 : \WP_Error))'],
             'wp_widget_rss_form' => ['void', 'args' => self::getWpWidgetRssFormArgsType(), 'inputs' => self::getWpWidgetRssFormInputsType()],
             'wpdb::get_results' => ["null|(\$output is 'ARRAY_A' ? array<string, mixed> : (\$output is 'ARRAY_N' ? array<int, mixed> : (\$output is 'OBJECT_K' ? array<string, \stdClass> : \stdClass)))", 'output' => "'OBJECT'|'OBJECT_K'|'ARRAY_A'|'ARRAY_N'"],
             'wpdb::get_row' => ["null|void|(\$output is 'ARRAY_A' ? array<string, mixed> : (\$output is 'ARRAY_N' ? array<int, mixed> : \stdClass))", 'output' => "'OBJECT'|'ARRAY_A'|'ARRAY_N'", 'y' => '0|positive-int'],
