@@ -21,6 +21,7 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
 use PhpParser\Node\Expr\Exit_;
 use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Expression;
@@ -727,6 +728,11 @@ class Visitor extends \StubsGenerator\NodeVisitor
             }
             // If a first level statement is exit/die, it's return type never.
             if ($stmt->expr instanceof Exit_) {
+                if ($stmt->expr->expr instanceof String_) {
+                    if (strpos($stmt->expr->expr->value, 'must be overridden') !== false) {
+                        return '';
+                    }
+                }
                 return 'never';
             }
             if (!($stmt->expr instanceof FuncCall) || !($stmt->expr->name instanceof Name)) {
