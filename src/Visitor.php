@@ -53,6 +53,7 @@ class Visitor extends \StubsGenerator\NodeVisitor
         $this->functionMap = new FunctionMap();
     }
 
+    // phpcs:ignore NeutronStandard.Functions.TypeHint.NoReturnType
     public function enterNode(Node $node)
     {
         $voidOrNever = $this->voidOrNever($node);
@@ -337,9 +338,10 @@ class Visitor extends \StubsGenerator\NodeVisitor
             return [];
         }
 
-        list($description) = explode("\n\n", $paramDescription->__toString());
+        $description = explode("\n\n", $paramDescription->__toString());
+        $description = array_shift($description);
 
-        if (strpos($description, '()') === false) {
+        if ($description === null | strpos($description, '()') === false) {
             return [];
         }
 
@@ -486,7 +488,7 @@ class Visitor extends \StubsGenerator\NodeVisitor
 
         $elements = self::getElementsFromDescription(
             $tagDescription,
-            $tag instanceof Param ? true : false
+            $tag instanceof Param
         );
 
         if (count($elements) === 0) {
@@ -546,16 +548,17 @@ class Visitor extends \StubsGenerator\NodeVisitor
          */
         $matched = preg_match("#(?>returns|either|one of|accepts|values are|:) ('.+'),? (?>or|and) '([^']+)'#i", $fullDescription, $matches);
 
-        if (! $matched) {
+        if ($matched !== 1) {
             return null;
         }
 
-        list(, $items, $final) = $matches;
+        $items = $matches[1];
+        $final = $matches[2];
 
         // Pluck out phrases between single quotes, so messy sentences are handled:
         preg_match_all("#'([^']+)'#", $items, $matches);
 
-        list(,$accepted) = $matches;
+        $accepted = $matches[1];
 
         // Append the final item:
         $accepted[] = $final;
@@ -594,7 +597,11 @@ class Visitor extends \StubsGenerator\NodeVisitor
                 continue;
             }
             // Move the type that uses the hash notation to the end of union types so the shape works.
-            $tagVariableType = str_replace("{$supportedType}|", '', $tagVariableType) . "|{$supportedType}";
+            $tagVariableType = sprintf(
+                '%s|%s',
+                str_replace("{$supportedType}|", '', $tagVariableType),
+                $supportedType
+            );
         }
 
         return $tagVariableType;
@@ -639,7 +646,8 @@ class Visitor extends \StubsGenerator\NodeVisitor
                 return [];
             }
 
-            list($type, $name) = $parts;
+            $type = $parts[0];
+            $name = $parts[1];
 
             $optionalArg = $optional;
             $nameTrimmed = ltrim($name, '$');

@@ -40,6 +40,7 @@ class Finder extends \StubsGenerator\Finder
      */
     private function excludeBackwardCompatibilityFiles(): void
     {
+        // phpcs:disable Squiz.PHP.CommentedOutCode.Found
         $this
             ->notPath('wp-includes/cache-compat.php')
             ->notPath('wp-includes/compat.php')
@@ -52,6 +53,7 @@ class Finder extends \StubsGenerator\Finder
             //->notPath('wp-includes/theme-compat/footer.php')
             //->notPath('wp-includes/theme-compat/header.php')
             //->notPath('wp-includes/theme-compat/sidebar.php');
+        // phpcs:enable Squiz.PHP.CommentedOutCode.Found
     }
 
     /**
