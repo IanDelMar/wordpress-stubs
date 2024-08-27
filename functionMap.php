@@ -32,6 +32,7 @@ $filesystemDirlistReturnType = "false|array<string, array{name: string, perms: s
  * @link https://github.com/phpstan/phpstan-src/blob/1.10.x/resources/functionMap.php
  */
 return [
+    '_get_list_table' => ["(\$class_name is 'WP_Posts_List_Table'|'WP_Media_List_Table'|'WP_Terms_List_Table'|'WP_Users_List_Table'|'WP_Comments_List_Table'|'WP_Post_Comments_List_Table'|'WP_Links_List_Table'|'WP_Plugin_Install_List_Table'|'WP_Themes_List_Table'|'WP_Theme_Install_List_Table'|'WP_Plugins_List_Table'|'WP_Application_Passwords_List_Table'|'WP_MS_Sites_List_Table'|'WP_MS_Users_List_Table'|'WP_MS_Themes_List_Table'|'WP_Privacy_Data_Export_Requests_List_Table'|'WP_Privacy_Data_Removal_Requests_List_Table' ? \WP_List_Table : false)", 'args' => 'array{screen?: string}'],
     'addslashes_gpc' => ['T', '@phpstan-template' => 'T', 'gpc' => 'T'],
     'add_submenu_page' => [null, 'callback' => "''|callable"],
     'have_posts' => [null, '@phpstan-impure' => ''],
@@ -52,6 +53,7 @@ return [
     'WP_Http::head' => [$httpReturnType],
     'WP_Http::post' => [$httpReturnType],
     'WP_Http::request' => [$httpReturnType],
+    'wp_is_numeric_array' => ['(T is array ? (key-of<T> is int ? true : false) : false)', '@template' => 'T of mixed', 'data' => 'T', '@phpstan-assert-if-true' => '(T is list ? T : array<int, value-of<T>>) $data'],
     'wp_list_bookmarks' => ['($args is array{echo: false|0} ? string : void)'],
     'wp_list_categories' => ['($args is array{echo: false|0} ? string|false : false|void)'],
     'wp_list_pages' => ['($args is array{echo: false} ? string : void)'],
@@ -156,4 +158,7 @@ return [
     'WP_Widget::form' => [null, 'instance' => 'T'],
     'WP_Widget::update' => [null, 'new_instance' => 'T', 'old_instance' => 'T'],
     'WP_Widget::widget' => [null, 'instance' => 'T', 'args' => 'array{name:string,id:string,description:string,class:string,before_widget:string,after_widget:string,before_title:string,after_title:string,before_sidebar:string,after_sidebar:string,show_in_rest:boolean,widget_id:string,widget_name:string}'],
+    'wp_parse_list' => ['($input_list is array ? array<scalar> : list<string>)'],
+    'wp_parse_str' => [null, '@phpstan-param-out' => 'array<int|string, array|string> $result'],
+    'size_format' => ["(\$bytes is not numeric ? false : (\$bytes is negative-int|'0' ? false : string))"],
 ];
