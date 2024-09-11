@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$httpReturnType = 'array{headers: \WpOrg\Requests\Utility\CaseInsensitiveDictionary, body: string, response: array{code: int,message: string}, cookies: array<int, \WP_Http_Cookie>, filename: string|null, http_response: \WP_HTTP_Requests_Response}|\WP_Error';
+$httpReturnType = 'array{headers: \WpOrg\Requests\Utility\CaseInsensitiveDictionary, body: string, response: array{code: int, message: string}, cookies: array<int, \WP_Http_Cookie>, filename: string|null, http_response: \WP_HTTP_Requests_Response}|\WP_Error';
 
 if (file_exists(sprintf('%s/source/wordpress/wp-includes/Requests/Cookie/Jar.php', __DIR__))) {
     $httpReturnType = 'array{headers: \Requests_Utility_CaseInsensitiveDictionary, body: string, response: array{code: int,message: string}, cookies: array<int, \WP_Http_Cookie>, filename: string|null, http_response: \WP_HTTP_Requests_Response}|\WP_Error';
@@ -32,7 +32,8 @@ $filesystemDirlistReturnType = "false|array<string, array{name: string, perms: s
  * @link https://github.com/phpstan/phpstan-src/blob/1.10.x/resources/functionMap.php
  */
 return [
-    '_get_list_table' => ["(\$class_name is 'WP_Posts_List_Table'|'WP_Media_List_Table'|'WP_Terms_List_Table'|'WP_Users_List_Table'|'WP_Comments_List_Table'|'WP_Post_Comments_List_Table'|'WP_Links_List_Table'|'WP_Plugin_Install_List_Table'|'WP_Themes_List_Table'|'WP_Theme_Install_List_Table'|'WP_Plugins_List_Table'|'WP_Application_Passwords_List_Table'|'WP_MS_Sites_List_Table'|'WP_MS_Users_List_Table'|'WP_MS_Themes_List_Table'|'WP_Privacy_Data_Export_Requests_List_Table'|'WP_Privacy_Data_Removal_Requests_List_Table' ? \WP_List_Table : false)", 'args' => 'array{screen?: string}'],
+    '_wp_json_sanity_check' => ['T', '@phpstan-template' => 'T', 'value' => 'T', 'depth' => 'positive-int'],
+    '_get_list_table' => ["(\$class_name is 'WP_Posts_List_Table'|'WP_Media_List_Table'|'WP_Terms_List_Table'|'WP_Users_List_Table'|'WP_Comments_List_Table'|'WP_Post_Comments_List_Table'|'WP_Links_List_Table'|'WP_Plugin_Install_List_Table'|'WP_Themes_List_Table'|'WP_Theme_Install_List_Table'|'WP_Plugins_List_Table'|'WP_Application_Passwords_List_Table'|'WP_MS_Sites_List_Table'|'WP_MS_Users_List_Table'|'WP_MS_Themes_List_Table'|'WP_Privacy_Data_Export_Requests_List_Table'|'WP_Privacy_Data_Removal_Requests_List_Table' ? T : false)", '@phpstan-template' => 'T', 'class_name' => 'class-string<T>', 'args' => 'array{screen?: string}'],
     'addslashes_gpc' => ['T', '@phpstan-template' => 'T', 'gpc' => 'T'],
     'add_submenu_page' => [null, 'callback' => "''|callable"],
     'have_posts' => [null, '@phpstan-impure' => ''],
@@ -46,6 +47,7 @@ return [
     'wp_die' => ['($args is array{exit: false} ? void : never))'],
     'wp_dropdown_languages' => ["(\$args is array{id: null|''} ? void : (\$args is array{name: null|''} ? void : string))"],
     'wp_clear_scheduled_hook' => ['(0|positive-int|($wp_error is false ? false : \WP_Error))', 'args' => $cronArgsType],
+    'wp_generate_tag_cloud' => ["(\$args is array{format: 'array'} ? array<int, string> : string)"],
     'wp_get_schedule' => [null, 'args' => $cronArgsType],
     'wp_get_scheduled_event' => [null, 'args' => $cronArgsType],
     'wp_get_archives' => ['($args is array{echo: false|0} ? string : void)'],
@@ -72,6 +74,7 @@ return [
     'wp_schedule_event' => ['($wp_error is false ? bool : true|\WP_Error)', 'args' => $cronArgsType],
     'wp_schedule_single_event' => ['($wp_error is false ? bool : true|\WP_Error)', 'args' => $cronArgsType],
     'wp_slash' => ['T', '@phpstan-template' => 'T', 'value' => 'T'],
+    'wp_tag_cloud' => ["(\$args is array{format: 'array'} ? array<int, string>|void : (\$args is array{echo: false|0} ? string|void : void))"],
     'wp_unschedule_event' => ['($wp_error is false ? bool : true|\WP_Error)', 'args' => $cronArgsType],
     'wp_unslash' => ['T', '@phpstan-template' => 'T', 'value' => 'T'],
     'wp_widget_rss_form' => ['void', 'args' => $wpWidgetRssFormArgsType, 'inputs' => $wpWidgetRssFormInputsType],
@@ -85,7 +88,24 @@ return [
     'WP_REST_Request::get_params' => ['T'],
     'WP_REST_Request::set_param' => ['void', '@phpstan-template' => 'TOffset of key-of<T>', 'key' => 'TOffset', 'value' => 'T[TOffset]'],
     'WP_REST_Request::has_param' => [null, 'key' => 'key-of<T>'],
-    'WP_Theme' => [null, '@phpstan-type' => "ThemeKey 'Name'|'Version'|'Status'|'Title'|'Author'|'Author Name'|'Author URI'|'Description'|'Template'|'Stylesheet'|'Template Files'|'Stylesheet Files'|'Template Dir'|'Stylesheet Dir'|'Screenshot'|'Tags'|'Theme Root'|'Theme Root URI'|'Parent Theme'"],
+    'WP_Theme' => [
+        null,
+        '@phpstan-type' => "ThemeKey 'Name'|'Version'|'Status'|'Title'|'Author'|'Author Name'|'Author URI'|'Description'|'Template'|'Stylesheet'|'Template Files'|'Stylesheet Files'|'Template Dir'|'Stylesheet Dir'|'Screenshot'|'Tags'|'Theme Root'|'Theme Root URI'|'Parent Theme'",
+        '@phpstan-property-read string $name' => '',
+        '@phpstan-property-read string $title' => '',
+        '@phpstan-property-read string $version' => '',
+        '@phpstan-property-read string $parent_theme' => '',
+        '@phpstan-property-read string $template_dir' => '',
+        '@phpstan-property-read string $stylesheet_dir' => '',
+        '@phpstan-property-read string $template' => '',
+        '@phpstan-property-read string $stylesheet' => '',
+        '@phpstan-property-read string $screenshot' => '',
+        '@phpstan-property-read string $description' => '',
+        '@phpstan-property-read string $author' => '',
+        '@phpstan-property-read list<string> $tags' => '',
+        '@phpstan-property-read string $theme_root' => '',
+        '@phpstan-property-read string $theme_root_uri' => '',
+    ],
     'WP_Theme::get' => ["(\$header is 'Name'|'ThemeURI'|'Description'|'Author'|'AuthorURI'|'Version'|'Template'|'Status'|'Tags'|'TextDomain'|'DomainPath'|'RequiresWP'|'RequiresPHP'|'UpdateURI' ? (\$header is 'Tags' ? string[] : string) : false)"],
     'WP_Theme::offsetExists' => ['($offset is ThemeKey ? true : false)'],
     'WP_Theme::offsetGet' => ['($offset is ThemeKey ? mixed : null)'],
@@ -158,7 +178,19 @@ return [
     'WP_Widget::form' => [null, 'instance' => 'T'],
     'WP_Widget::update' => [null, 'new_instance' => 'T', 'old_instance' => 'T'],
     'WP_Widget::widget' => [null, 'instance' => 'T', 'args' => 'array{name:string,id:string,description:string,class:string,before_widget:string,after_widget:string,before_title:string,after_title:string,before_sidebar:string,after_sidebar:string,show_in_rest:boolean,widget_id:string,widget_name:string}'],
+    'get_approved_comments' => ["(\$args is array{count: true} ? int : (\$args is array{fields: 'ids'} ?  array<int, int> : array<int, \WP_Comment>))"],
+    'get_posts' => ["(\$args is array{fields: 'id=>parent'|'ids'} ? array<int, int> : array<int, \WP_Post>)"],
+    'get_sites' => ["(\$args is array{count: true} ? int : (\$args is array{fields: 'ids'} ?  array<int, int> : array<int, \WP_Site>))"],
+    'get_tags' =>  ["(\$args is array{fields: 'count'} ? numeric-string : (\$args is array{fields: 'names'|'slugs'} ? list<string> : (\$args is array{fields: 'id=>name'|'id=>slug'} ? array<int, string> : (\$args is array{fields: 'id=>parent'} ? array<int, int> : (\$args is array{fields: 'ids'|'tt_ids'} ? list<int> : array<int, \WP_Term>)))))|\WP_Error"],
+    'get_terms' => ["(\$args is array{fields: 'count'} ? numeric-string : (\$args is array{fields: 'names'|'slugs'} ? list<string> : (\$args is array{fields: 'id=>name'|'id=>slug'} ? array<int, string> : (\$args is array{fields: 'id=>parent'} ? array<int, int> : (\$args is array{fields: 'ids'|'tt_ids'} ? list<int> : array<int, \WP_Term>)))))|\WP_Error"],
+    'wp_get_post_categories' => ["(\$post_id is 0 ? array{} : ((\$args is array{fields: 'names'|'slugs'} ? list<string> : (\$args is array{fields: 'id=>name'|'id=>slug'} ? array<int, string> : (\$args is array{fields: 'id=>parent'} ? array<int, int> : (\$args is array{fields: 'all'|'all_with_object_id'} ? array<int, \WP_Term> : (\$args is array{fields: 'count'} ? numeric-string : list<int>)))))|\WP_Error))"],
+    'wp_get_post_tags' => ["(\$post_id is 0 ? array{} : ((\$args is array{fields: 'names'|'slugs'} ? list<string> : (\$args is array{fields: 'id=>name'|'id=>slug'} ? array<int, string> : (\$args is array{fields: 'id=>parent'} ? array<int, int> : (\$args is array{fields: 'ids'|'tt_ids'} ? list<int> : (\$args is array{fields: 'count'} ? numeric-string : array<int, \WP_Term>)))))|\WP_Error))"],
+    'wp_get_post_terms' => ["(\$post_id is 0 ? array{} : (\$taxonomy is empty ? array{} : ((\$args is array{fields: 'names'|'slugs'} ? list<string> : (\$args is array{fields: 'id=>name'|'id=>slug'} ? array<int, string> : (\$args is array{fields: 'id=>parent'} ? array<int, int> : (\$args is array{fields: 'ids'|'tt_ids'} ? list<int> : (\$args is array{fields: 'count'} ? numeric-string : array<int, \WP_Term>)))))|\WP_Error)))"],
+    'wp_get_object_terms' => ["(\$object_ids is empty ? array{} : (\$taxonomies is empty ? array{} : ((\$args is array{fields: 'names'|'slugs'} ? list<string> : (\$args is array{fields: 'id=>name'|'id=>slug'} ? array<int, string> : (\$args is array{fields: 'id=>parent'} ? array<int, int> : (\$args is array{fields: 'ids'|'tt_ids'} ? list<int> : (\$args is array{fields: 'count'} ? numeric-string : array<int, \WP_Term>)))))|\WP_Error)))"],
     'wp_parse_list' => ['($input_list is array ? array<scalar> : list<string>)'],
     'wp_parse_str' => [null, '@phpstan-param-out' => 'array<int|string, array|string> $result'],
     'size_format' => ["(\$bytes is not numeric ? false : (\$bytes is negative-int|'0' ? false : string))"],
+    'WP_Translations::translate' => ['($singular is null ? null : string)'],
+    'WP_Translations::translate_plural' => ['($singular is null ? null : ($plural is null ? T : string))', '@phpstan-template T' => 'of string|null', 'singular' => 'T', 'count' => 'int'],
+    'WP_Query' => [null, '@phpstan-property-read bool $query_vars_changed' => '', '@phpstan-property-read bool|string $query_vars_hash' => '', '@phpstan-method void init_query_flags()' => ''],
 ];
