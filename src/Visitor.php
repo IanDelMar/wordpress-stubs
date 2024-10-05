@@ -81,22 +81,8 @@ class Visitor extends NodeVisitor
             return null;
         }
 
-        $symbolName = self::getNodeName($node);
-
-        if ($node instanceof ClassMethod || $node instanceof Property) {
-            $parent = $this->stack[count($this->stack) - 2];
-            \assert($parent instanceof \PhpParser\Node\Stmt\ClassLike);
-
-            if ($parent->name !== null) {
-                $symbolName = sprintf(
-                    '%1$s::%2$s%3$s',
-                    $parent->name->name,
-                    $node instanceof Property ? '$' : '',
-                    $symbolName
-                );
-            }
-        }
-        $node->setAttribute('fullSymbolName', $symbolName);
+        $symbolName = $this->getSymbolName($node);
+        $node->setAttribute('WPStubs_symbolName', $symbolName);
 
         $additions = $this->generateAdditionalTagsFromDoc($docComment);
         if (count($additions) > 0) {
@@ -108,12 +94,10 @@ class Visitor extends NodeVisitor
             $this->additionalTagStrings[$symbolName] = $additions;
         }
 
-        if ($voidOrNever !== '') {
+        if ($voidOrNever instanceof Type) {
             $addition = sprintf(
                 '@phpstan-return %s',
-                $voidOrNever === 'never'
-                    ? (new Never_())->__toString()
-                    : (new Void_())->__toString()
+                $voidOrNever->__toString()
             );
             if (
                 ! isset($this->additionalTagStrings[$symbolName])
@@ -126,17 +110,32 @@ class Visitor extends NodeVisitor
         return null;
     }
 
-    private static function getNodeName(Node $node): string
+    private function getSymbolName(Node $node): string
     {
         if ((($node instanceof Function_) || ($node instanceof ClassMethod) || ($node instanceof Class_)) && $node->name instanceof Identifier) {
-            return $node->name->name;
+            $name = $node->name->name;
         }
 
         if ($node instanceof Property) {
-            return $node->props[0]->name->name;
+            $name = $node->props[0]->name->name;
         }
 
-        return '';
+        \assert(isset($name), 'Node does not have a name');
+
+        if ($node instanceof Function_ || $node instanceof Class_) {
+            return $name;
+        }
+
+        $parent = $this->stack[count($this->stack) - 2];
+        \assert($parent instanceof \PhpParser\Node\Stmt\ClassLike);
+        \assert($parent->name instanceof \PhpParser\Node\Identifier);
+
+        return sprintf(
+            '%1$s::%2$s%3$s',
+            $parent->name->name,
+            $node instanceof Property ? '$' : '',
+            $name
+        );
     }
 
     /**
@@ -164,10 +163,10 @@ class Visitor extends NodeVisitor
             return;
         }
 
-        /** @var ?string $fullSymbolName */
-        $fullSymbolName = $node->getAttribute('fullSymbolName');
+        /** @var ?string $symbolName */
+        $symbolName = $node->getAttribute('WPStubs_symbolName');
 
-        if ($fullSymbolName === null) {
+        if ($symbolName === null) {
             return;
         }
 
@@ -177,13 +176,13 @@ class Visitor extends NodeVisitor
             return;
         }
 
-        $newDocComment = $this->addTags($fullSymbolName, $docComment);
+        $newDocComment = $this->addTags($symbolName, $docComment);
 
         if ($newDocComment instanceof Doc) {
             $node->setDocComment($newDocComment);
         }
 
-        if (! isset($this->additionalTagStrings[$fullSymbolName])) {
+        if (! isset($this->additionalTagStrings[$symbolName])) {
             return;
         }
 
@@ -193,7 +192,7 @@ class Visitor extends NodeVisitor
             return;
         }
 
-        $newDocComment = $this->addStringTags($fullSymbolName, $docComment);
+        $newDocComment = $this->addStringTags($symbolName, $docComment);
 
         if (! ($newDocComment instanceof Doc)) {
             return;
@@ -785,15 +784,18 @@ class Visitor extends NodeVisitor
             || (stripos($description, 'Defaults to ') !== false);
     }
 
-    private function voidOrNever(Node $node): string
+    private function voidOrNever(Node $node): ?Type
     {
+        $never = new Never_();
+        $void = new Void_();
+
         if (! ($node instanceof Function_) && ! ($node instanceof ClassMethod)) {
-            return '';
+            return null;
         }
 
         if (! isset($node->stmts) || count($node->stmts) === 0) {
             // Interfaces and abstract methods.
-            return '';
+            return null;
         }
 
         $returnStmts = $this->nodeFinder->findInstanceOf($node, Stmt_Return::class);
@@ -810,11 +812,11 @@ class Visitor extends NodeVisitor
                     }
                 ) instanceof Node
             ) {
-                return '';
+                return null;
             }
             // If there is no return statement that is not void,
             // it's return type void.
-            return 'void';
+            return $void;
         }
 
         // Check for never return type.
@@ -825,12 +827,12 @@ class Visitor extends NodeVisitor
             // If a first level statement is exit/die, it's return type never.
             if ($stmt->expr instanceof Exit_) {
                 if (! $stmt->expr->expr instanceof String_) {
-                    return 'never';
+                    return $never;
                 }
                 if (strpos($stmt->expr->expr->value, 'must be overridden') !== false) {
-                    return '';
+                    return null;
                 }
-                return 'never';
+                return $never;
             }
             if (! ($stmt->expr instanceof FuncCall) || ! ($stmt->expr->name instanceof Name)) {
                 continue;
@@ -839,7 +841,7 @@ class Visitor extends NodeVisitor
             // If a first level statement is a call to wp_send_json(_success/error),
             // it's return type never.
             if (strpos($name->toString(), 'wp_send_json') === 0) {
-                return 'never';
+                return $never;
             }
             // Skip all functions but wp_die().
             if (strpos($name->toString(), 'wp_die') !== 0) {
@@ -848,7 +850,7 @@ class Visitor extends NodeVisitor
             $args = $stmt->expr->getArgs();
             // If wp_die is called without 3rd parameter, it's return type never.
             if (count($args) < 3) {
-                return 'never';
+                return $never;
             }
             // If wp_die is called with 3rd parameter, we need additional checks.
             try {
@@ -859,7 +861,7 @@ class Visitor extends NodeVisitor
             }
 
             if (is_int($arg)) {
-                return 'never';
+                return $never;
             }
 
             if (! is_array($arg)) {
@@ -867,10 +869,10 @@ class Visitor extends NodeVisitor
             }
 
             if (! array_key_exists('exit', $arg) || (bool)$arg['exit']) {
-                return 'never';
+                return $never;
             }
         }
-        return '';
+        return null;
     }
 
     private function getCleanCommentsNode(Node $node): Node
@@ -879,28 +881,26 @@ class Visitor extends NodeVisitor
             return $node;
         }
 
-        // Remove "//" comments.
         $comments = [];
         foreach ($node->getComments() as $comment) {
-            if (strpos(trim($comment->getText()), '//') === 0) {
+            $commentText = trim($comment->getText());
+
+            // Strip out comments that are not PHPDoc comments.
+            if (
+                strpos($commentText, '/**') === false
+            ) {
                 continue;
             }
+
+            // Strip out comments that are not templates and not the actual docComment.
+            if (
+                strpos($commentText, '/**#@') === false
+                && $commentText !== trim((string)$node->getDocComment())
+            ) {
+                continue;
+            }
+
             $comments[] = $comment;
-        }
-
-        $node->setAttribute('comments', $comments);
-
-        if ($node->getDocComment() === null) {
-            return $node;
-        }
-
-        // Remove file comments that are bound to the first node in a file.
-        $comments = $node->getComments();
-        if (
-            $comments[0]->getText() !== (string)$node->getDocComment()
-            && strpos($comments[0]->getText(), '/**#@') !== 0
-        ) {
-            array_shift($comments);
         }
 
         $node->setAttribute('comments', $comments);
