@@ -1,0 +1,59 @@
+name: Psalm Integration
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  psalm:
+    name: Psalm
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        php-version:
+          - "8.4"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          coverage: none
+          php-version: ${{ matrix.php-version }}
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Generate stubs
+        run: ./generate.sh
+
+      - name: Create Psalm config
+        run: |
+          cat > psalm.xml <<'EOF'
+          <?xml version="1.0"?>
+          <psalm
+              errorLevel="1"
+              resolveFromConfigFile="true"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns="https://getpsalm.org/schema/config"
+              xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+          >
+              <projectFiles>
+                  <file name="psalm-test.php" />
+              </projectFiles>
+              <stubs>
+                  <file name="wordpress-stubs.php" />
+              </stubs>
+          </psalm>
+          EOF
+          cat > psalm-test.php <<'PHPEOF'
+          <?php
+          // Test file to verify Psalm can use the stubs
+          PHPEOF
+
+      - name: Run Psalm
+        uses: docker://vimeo/psalm-github-actions
